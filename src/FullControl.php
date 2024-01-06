@@ -166,15 +166,27 @@ class FullControl
     protected function emit(): void
     {
         array_walk($this->yaml, function ($data, $file): void {
-            $encoded = Yaml::dump($data, inline: 10, indent: 2, flags: Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
-            if (!$this->environment->getBool('DRY')) {
-                $this->logger->info('Emitting {file} ({bytes} bytes)', ['file' => $file, 'bytes' => strlen($encoded)]);
-                $this->storeYamls->write($file, $encoded);
-                echo $encoded;
-                echo "\n\n";
-            } else {
+            $encoded = Yaml::dump($data, inline: 10, indent: 2, flags: Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE | Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+            if ($this->environment->getBool('DRY')) {
                 $this->logger->warning('Not emitting {file} ({bytes} bytes), as we are in dry run mode (--dry)', ['file' => $file, 'bytes' => strlen($encoded)]);
+
+                return;
             }
+            $this->logger->info('Emitting {file} ({bytes} bytes)', ['file' => $file, 'bytes' => strlen($encoded)]);
+            $this->storeYamls->write($file, $encoded);
+            echo "{$encoded}\n\n";
+        });
+
+        array_walk($this->json, function ($data, $file): void {
+            $encoded = json_encode($data, JSON_NUMERIC_CHECK | JSON_PRETTY_PRINT);
+            if ($this->environment->getBool('DRY')) {
+                $this->logger->warning('Not emitting {file} ({bytes} bytes), as we are in dry run mode (--dry)', ['file' => $file, 'bytes' => strlen($encoded)]);
+
+                return;
+            }
+            $this->logger->info('Emitting {file} ({bytes} bytes)', ['file' => $file, 'bytes' => strlen($encoded)]);
+            $this->storeJsons->write($file, $encoded);
+            echo "{$encoded}\n\n";
         });
     }
 }
