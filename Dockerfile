@@ -8,6 +8,7 @@ RUN apk \
             php81-curl \
             php81-fileinfo \
             php81-tokenizer \
+            php81-pdo \
             composer \
             ncurses
 
@@ -17,5 +18,6 @@ RUN /usr/bin/composer \
       --working-dir=/usr/src/fullcontrol \
       --no-cache \
         install
-RUN chmod +x /usr/src/fullcontrol/bin/fullcontrol
+RUN chmod +x /usr/src/fullcontrol/bin/fullcontrol && \
+    chmod a+rw /var/log
 ENV PATH="/usr/src/fullcontrol/bin:${PATH}"

@@ -17,14 +17,18 @@
     "adambrett/shell-wrapper": "~1.0",
     "bramus/monolog-colored-line-formatter": "~3.1",
     "guzzlehttp/guzzle": "^7.8",
+    "jakeasmith/http_build_url": "^1.0",
     "kint-php/kint": "^3.3",
     "league/flysystem": "^2.5",
+    "league/flysystem-read-only": "^3.3",
     "monolog/monolog": "^3.5",
     "phpspec/php-diff": "^1.1",
+    "phpunit/php-timer": "^5.0",
     "spatie/emoji": "^2.3",
     "symfony/yaml": "^6.4",
     "twig/twig": "^3.8",
-    "vanilla/garden-cli": "^4.0"
+    "vanilla/garden-cli": "^4.0",
+    "vlucas/phpdotenv": "^5.6"
   },
   "authors": [
     {
