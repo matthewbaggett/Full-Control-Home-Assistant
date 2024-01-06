@@ -23,4 +23,4 @@ composer-%:
       		composer $*
 
 build: composer-install
-	docker buildx bake test --load
+	docker buildx bake test --load --progress=plain

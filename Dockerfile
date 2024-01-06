@@ -21,3 +21,6 @@ RUN /usr/bin/composer \
 RUN chmod +x /usr/src/fullcontrol/bin/fullcontrol && \
     chmod a+rw /var/log
 ENV PATH="/usr/src/fullcontrol/bin:${PATH}"
+RUN sed -i 's|python3 -m homeassistant|python3 -m homeassistant --log-file /var/log/home-assistant.log|g' /etc/services.d/home-assistant/run && \
+    touch /etc/services.d/home-assistant/run
+RUN cat  /etc/services.d/home-assistant/run

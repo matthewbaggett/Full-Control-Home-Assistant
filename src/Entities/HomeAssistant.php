@@ -28,9 +28,16 @@ class HomeAssistant extends AbstractEntity
                 'recorder' => [
                     'purge_keep_days' => 365 * 100,
                     'auto_purge'      => false,
-                    'db_url'          => new TaggedValue('secret','db_url'),
+                    'db_url'          => new TaggedValue('secret', 'db_url'),
                     'db_retry_wait'   => 15,
                 ],
+                'logger' => [
+                    'default' => 'info',
+                ],
+                'default_config' => [],
+                'automation'     => new TaggedValue('include', 'automations.yaml'),
+                'script'         => new TaggedValue('include', 'scripts.yaml'),
+                'scene'          => new TaggedValue('include', 'scenes.yaml'),
             ],
             'secrets.yaml' => [
                 'db_url' => http_build_url([
@@ -42,6 +49,9 @@ class HomeAssistant extends AbstractEntity
                     'path'   => sprintf('/%s', $fc->getEnvironment()->get('DATABASE_DATABASE', 'homeassistant')),
                 ]),
             ],
+            'scripts.yaml'     => [],
+            'automations.yaml' => [],
+            'scenes.yaml'      => [],
         ]);
         parent::emit($logger, $fc);
     }

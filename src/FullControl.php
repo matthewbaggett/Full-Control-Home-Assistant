@@ -64,6 +64,7 @@ class FullControl
         ));
         $this->logger->pushHandler($stdout);
         $this->logger->pushProcessor(new PsrLogMessageProcessor());
+        $this->logger->info('Starting Full Control Home Assistant FCHA');
 
         // Parse environment
         $this->environment = (new Environment($this->logger));
@@ -169,6 +170,8 @@ class FullControl
             if (!$this->environment->getBool('DRY')) {
                 $this->logger->info('Emitting {file} ({bytes} bytes)', ['file' => $file, 'bytes' => strlen($encoded)]);
                 $this->storeYamls->write($file, $encoded);
+                echo $encoded;
+                echo "\n\n";
             } else {
                 $this->logger->warning('Not emitting {file} ({bytes} bytes), as we are in dry run mode (--dry)', ['file' => $file, 'bytes' => strlen($encoded)]);
             }
