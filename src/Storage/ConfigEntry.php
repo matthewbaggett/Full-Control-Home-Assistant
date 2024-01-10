@@ -6,33 +6,33 @@ namespace FullControl\Storage;
 
 class ConfigEntry extends AbstractConfigEntry
 {
+    protected Version $version;
+
     public function __construct(
         readonly protected string $domain,
-        readonly protected string $title,
-        readonly protected array $data,
-        readonly protected array $options,
-        readonly protected bool $disableNewEntities,
-        readonly protected bool $disablePolling,
-        readonly protected string $source,
+        readonly protected ?string $name,
+        readonly protected ?array $data,
+        readonly protected ?array $options,
+        readonly protected ?bool $prefDisableNewEntities,
+        readonly protected ?bool $prefDisablePolling,
+        readonly protected ?string $source,
         readonly protected ?string $disabledBy, // @todo replace with enum
     ) {
+        $this->version = new Version(1, 1);
     }
 
     public function __toArray(): array
     {
-        return [
-            'entry_id'  => $this->getEntryId(),
-            'unique_id' => $this->getUniqueId(),
+        $config = [
+            'entry_id'      => $this->getEntryId(),
+            'unique_id'     => null, // $this->getUniqueId(),
+            'version'       => $this->version->version,
+            'minor_version' => $this->version->minorVersion,
+            'title'         => $this->name,
         ] + parent::__toArray();
-    }
 
-    public function getUniqueId(): string
-    {
-        return hash('tiger128,4', json_encode(parent::__toArray()));
-    }
+        unset($config['name']);
 
-    public function getEntryId(): string
-    {
-        return hash('tiger128,3', json_encode(parent::__toArray()));
+        return $config;
     }
 }

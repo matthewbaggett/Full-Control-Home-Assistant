@@ -4,52 +4,28 @@ declare(strict_types=1);
 
 namespace FullControl;
 
-use FullControl\Entities\AbstractEntity;
+use Bramus\Monolog\Formatter\ColoredLineFormatter;
+use FullControl\Entities\FullControlHomeAssistantEntity;
 use FullControl\Environment\Environment;
 use Garden\Cli\Cli;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Local\LocalFilesystemAdapter;
+use Monolog\Handler\StreamHandler;
+use Monolog\Level;
+use Monolog\Logger;
 use Monolog\Processor\PsrLogMessageProcessor;
 use SebastianBergmann\Timer\Timer;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Bramus\Monolog\Formatter\ColoredLineFormatter;
-use Monolog\Level;
 use Symfony\Component\Yaml\Yaml;
 
 class FullControl
 {
     protected Logger $logger;
-
-    private array $yaml    = [];
-    private array $json    = [];
     protected Filesystem $storeYamls;
     protected Filesystem $storeJsons;
     protected Environment $environment;
 
-    public function getLogger(): Logger
-    {
-        return $this->logger;
-    }
-
-    public function getEnvironment(): Environment
-    {
-        return $this->environment;
-    }
-
-    public function addYaml($yaml): static
-    {
-        $this->yaml = array_merge($this->yaml, $yaml);
-
-        return $this;
-    }
-
-    public function addJson($json): static
-    {
-        $this->json = array_merge($this->json, $json);
-
-        return $this;
-    }
+    private array $yaml    = [];
+    private array $json    = [];
 
     public function __construct()
     {
@@ -64,7 +40,7 @@ class FullControl
         ));
         $this->logger->pushHandler($stdout);
         $this->logger->pushProcessor(new PsrLogMessageProcessor());
-        $this->logger->info('Starting Full Control Home Assistant FCHA');
+        $this->logger->info('Starting Full Control Home Assistant FCHA on PHP {php_version}', ['php_version' => PHP_VERSION]);
 
         // Parse environment
         $this->environment = (new Environment($this->logger));
@@ -123,6 +99,30 @@ class FullControl
         $this->storeJsons   = new Filesystem(new LocalFilesystemAdapter($this->environment->get('FULLCONTROL_JSON_DIR')));
     }
 
+    public function getLogger(): Logger
+    {
+        return $this->logger;
+    }
+
+    public function getEnvironment(): Environment
+    {
+        return $this->environment;
+    }
+
+    public function addYaml($yaml): static
+    {
+        $this->yaml = array_merge($this->yaml, $yaml);
+
+        return $this;
+    }
+
+    public function addJson($json): static
+    {
+        $this->json = array_merge($this->json, $json);
+
+        return $this;
+    }
+
     public function run(): void
     {
         array_map(function ($filename): void { $this->eval($filename); }, $this->environment->get('FULLCONTROL_CONFIG', []));
@@ -147,7 +147,7 @@ class FullControl
 
             require_once $filename;
             foreach (get_defined_vars() as $name => $value) {
-                if ($value instanceof AbstractEntity) {
+                if ($value instanceof FullControlHomeAssistantEntity) {
                     $value->emit($logger, $fc);
                 }
             }
@@ -178,7 +178,11 @@ class FullControl
         });
 
         array_walk($this->json, function ($data, $file): void {
-            $encoded = json_encode($data, JSON_NUMERIC_CHECK | JSON_PRETTY_PRINT);
+            $encoded = preg_replace_callback(
+                '/^ +/m',
+                fn ($m) => str_repeat(' ', strlen($m[0]) / 2),
+                str_replace('[]', '{}', json_encode($data, JSON_NUMERIC_CHECK | JSON_PRETTY_PRINT))
+            );
             if ($this->environment->getBool('DRY')) {
                 $this->logger->warning('Not emitting {file} ({bytes} bytes), as we are in dry run mode (--dry)', ['file' => $file, 'bytes' => strlen($encoded)]);
 

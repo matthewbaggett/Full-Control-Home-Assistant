@@ -22,5 +22,7 @@ composer-%:
       	composer \
       		composer $*
 
+update: composer-update fix
+
 build: composer-install
 	docker buildx bake test --load --progress=plain

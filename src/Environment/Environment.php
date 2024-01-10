@@ -17,6 +17,11 @@ class Environment
         $this->setMany(array_merge($_ENV, $_SERVER));
     }
 
+    public function __toArray(): array
+    {
+        return $this->store;
+    }
+
     public function loadEnv(string $filename): static
     {
         if (file_exists($filename)) {
@@ -74,10 +79,5 @@ class Environment
         ksort($this->store);
 
         return $this;
-    }
-
-    public function __toArray(): array
-    {
-        return $this->store;
     }
 }

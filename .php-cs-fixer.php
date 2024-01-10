@@ -9,10 +9,10 @@ return (new PhpCsFixer\Config())
         '@PhpCsFixer'                      => true,
         // '@PhpCsFixer:risky'                => true,
         '@PHP82Migration'                  => true,
-        '@PHP80Migration:risky'            => true,
+        //'@PHP80Migration:risky'            => true,
         '@PSR12'                           => true,
-        '@PSR12:risky'                     => true,
-        '@PHPUnit100Migration:risky'       => true,
+        //'@PSR12:risky'                     => true,
+        //'@PHPUnit100Migration:risky'       => true,
 
         'binary_operator_spaces'     => [
             'default'   => 'align_single_space_minimal',

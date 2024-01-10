@@ -6,24 +6,71 @@ namespace FullControl\Entities;
 
 use FullControl\FullControl;
 use FullControl\Storage\ConfigEntry;
+use FullControl\Storage\DeviceRegistry;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Yaml\Tag\TaggedValue;
 
-class HomeAssistant extends AbstractEntity
+class HomeAssistant extends FullControlHomeAssistantEntity
 {
+    /**
+     * @var array Area[]
+     */
+    protected array $areas;
+
     public function __construct(
-        readonly private string $name,
-        readonly private string $latitude,
-        readonly private string $longitude,
-        readonly private string $timezone,
-        readonly private string $currency,
-        readonly private string $country,
-        readonly private string $language,
+        protected LoggerInterface $logger,
+        ?string $name = null,
+        ?Area $area = null,
+        ?string $icon = null,
+        readonly protected ?string $latitude = null,
+        readonly protected ?string $longitude = null,
+        readonly protected ?string $timezone = null,
+        readonly protected ?string $currency = null,
+        readonly protected ?string $country = null,
+        readonly protected ?string $language = 'en',
     ) {
+        parent::__construct(
+            name: $name,
+            area: $area,
+            icon: $icon
+        );
+
+        // Make a default outside area
+        $this->areas = [
+            'outside' => $outside = (new Area(name: 'Outside')),
+        ];
+
+        // Make a default sun entity
+        $this->entities = [
+            'sun' => $sun = (new Sun(area: $outside)),
+        ];
+    }
+
+    public function addAreas(Area ...$area): self
+    {
+        array_walk($area, function (Area $area): void {
+            $this->areas[$area->getName()] = $area;
+            $this->logger->info("Added area {$area->getName()}");
+        });
+        ksort($this->areas);
+
+        return $this;
+    }
+
+    public function addEntities(FullControlHomeAssistantEntity ...$entity): self
+    {
+        array_walk($entity, function (FullControlHomeAssistantEntity $entity): void {
+            $this->entities[$entity->getName()] = $entity;
+            $this->logger->info("Added entity {$entity->getName()}");
+        });
+        ksort($this->entities);
+
+        return $this;
     }
 
     public function emit(LoggerInterface $logger, FullControl $fc): void
     {
+        $logger->info('entered emit');
         $fc->addYaml([
             'configuration.yaml' => [
                 'homeassistant' => [
@@ -80,7 +127,12 @@ class HomeAssistant extends AbstractEntity
                 'version'       => 1,
                 'minor_version' => 3,
                 'key'           => 'core.area_registry',
-                'data'          => [],
+                'data'          => [
+                    'areas' => array_map(
+                        fn (Area $area) => $area->toAreaRegistry(),
+                        array_values($this->areas)
+                    ),
+                ],
             ],
 
             // Where are we, when are we, where on the internet are we, welke taal spreken wij, etc
@@ -109,22 +161,141 @@ class HomeAssistant extends AbstractEntity
                 'minor_version' => 1,
                 'key'           => 'core.config_entries',
                 'data'          => [
-                    'entries' => [
-                        new ConfigEntry(
-                            domain: 'sun',
-                            title: 'The Day Star',
-                            data: [],
-                            options: [],
-                            disableNewEntities: false,
-                            disablePolling: false,
-                            source: 'import',
-                            disabledBy: null
-                        ),
-                    ],
+                    // Call ->toConfigEntry() on each entity
+                    'entries' => array_values(array_filter(array_map(
+                        fn (FullControlHomeAssistantEntity $entity) => $entity->toConfigEntry(),
+                        array_values($this->entities)
+                    ))),
                 ],
+            ],
+
+            // Device Registry
+            'core.device_registry' => [
+                'version'       => 1,
+                'minor_version' => 1,
+                'key'           => 'core.device_registry',
+                'data'          => [
+                    // Call ->toDeviceRegistry() on each entity
+                    'devices' => array_map(
+                        fn (FullControlHomeAssistantEntity $entity) => $entity->toDeviceRegistry(),
+                        array_values($this->entities)
+                    ),
+                    'deleted_devices' => [],
+                ],
+            ],
+
+            // Entity Registry
+            'core.entity_registry' => [
+                'version'       => 1,
+                'minor_version' => 1,
+                'key'           => 'core.entity_registry',
+                'data'          => [
+                    // Call ->toEntityRegistry() on each entity
+                    'entities' => array_merge(...array_map(
+                        fn (FullControlHomeAssistantEntity $entity) => $entity->toEntityRegistry(),
+                        array_values($this->entities)
+                    )),
+                    'deleted_entities' => [],
+                ],
+            ],
+
+            // Restore State
+            'core.restore_state' => [
+                'version'       => 1,
+                'minor_version' => 1,
+                'key'           => 'core.restore_state',
+                'data'          => [
+                ],
+            ],
+
+            // ???
+            'core.uuid' => null,
+
+            // Pretty this is for yelling at computers
+            'homeassistant.exposed_entities' => [
+                'version'       => 1,
+                'minor_version' => 1,
+                'key'           => 'homeassistant.exposed_entities',
+                'data'          => [
+                    'assistants'       => [],
+                    'exposed_entities' => [],
+                ],
+            ],
+
+            // http
+            'http' => [
+                'version'       => 1,
+                'minor_version' => 1,
+                'key'           => 'http',
+                'data'          => [
+                    'ip_ban_enabled'           => true,
+                    'login_attempts_threshold' => 5,
+                    'server_port'              => 8123,
+                    'ssl_profile'              => 'modern',
+                    'cors_allowed_origins'     => [
+                        'https://cast.home-assistant.io',
+                    ],
+                    'use_x_frame_options' => true,
+                ],
+            ],
+
+            // http.auth
+            'http.auth' => [
+                'version'       => 1,
+                'minor_version' => 1,
+                'key'           => 'http.auth',
+                'data'          => [],
+            ],
+
+            // Onboarding
+            'onboarding' => null,
+
+            // Person
+            'person' => [
+                'version'       => 1,
+                'minor_version' => 1,
+                'key'           => 'person',
+                'data'          => [
+                    'storage_version' => 1,
+                    'items'           => array_map(
+                        fn (Person $person) => $person->toPersonEntity(),
+                        array_filter($this->entities, fn (FullControlHomeAssistantEntity $entity) => $entity instanceof Person)
+                    ),
+                ],
+            ],
+
+            'repairs.issue_registry' => [
+                'version'       => 1,
+                'minor_version' => 1,
+                'key'           => 'repairs.issue_registry',
+                'data'          => [
+                    'issues' => [],
+                ],
+            ],
+
+            'trace.saved_traces' => [
+                'version'       => 1,
+                'minor_version' => 1,
+                'key'           => 'trace.saved_traces',
+                'data'          => [],
             ],
         ]);
 
         parent::emit($logger, $fc);
+    }
+
+    public function toConfigEntry(): ?ConfigEntry
+    {
+        return null;
+    }
+
+    public function toDeviceRegistry(): ?DeviceRegistry
+    {
+        return null;
+    }
+
+    public function toEntityRegistry(): array
+    {
+        return [];
     }
 }

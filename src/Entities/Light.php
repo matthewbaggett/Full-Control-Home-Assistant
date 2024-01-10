@@ -4,6 +4,6 @@ declare(strict_types=1);
 
 namespace FullControl\Entities;
 
-class Light extends AbstractEntity
+class Light extends FullControlHomeAssistantEntity
 {
 }
