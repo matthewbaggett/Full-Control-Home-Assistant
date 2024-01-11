@@ -176,10 +176,10 @@ class HomeAssistant extends FullControlHomeAssistantEntity
                 'key'           => 'core.device_registry',
                 'data'          => [
                     // Call ->toDeviceRegistry() on each entity
-                    'devices' => array_map(
+                    'devices' => array_values(array_filter(array_map(
                         fn (FullControlHomeAssistantEntity $entity) => $entity->toDeviceRegistry(),
                         array_values($this->entities)
-                    ),
+                    ))),
                     'deleted_devices' => [],
                 ],
             ],
@@ -252,15 +252,15 @@ class HomeAssistant extends FullControlHomeAssistantEntity
 
             // Person
             'person' => [
-                'version'       => 1,
+                'version'       => 2,
                 'minor_version' => 1,
                 'key'           => 'person',
                 'data'          => [
-                    'storage_version' => 1,
-                    'items'           => array_map(
+                    // 'storage_version' => 1,
+                    'items'           => array_values(array_map(
                         fn (Person $person) => $person->toPersonEntity(),
                         array_filter($this->entities, fn (FullControlHomeAssistantEntity $entity) => $entity instanceof Person)
-                    ),
+                    )),
                 ],
             ],
 

@@ -12,6 +12,7 @@ use FullControl\Storage\DeviceRegistry;
 use FullControl\Storage\EntityRegistry;
 use FullControl\Traits;
 use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 abstract class FullControlHomeAssistantEntity extends AbstractStorage
 {
@@ -57,7 +58,7 @@ abstract class FullControlHomeAssistantEntity extends AbstractStorage
         return $this->icon;
     }
 
-    public function emit(Logger $logger, FullControl $fc): void
+    public function emit(LoggerInterface $logger, FullControl $fc): void
     {
         $logger = $logger->withName(sprintf(
             '%s->%s',

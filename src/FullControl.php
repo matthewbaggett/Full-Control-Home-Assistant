@@ -181,7 +181,9 @@ class FullControl
             $encoded = preg_replace_callback(
                 '/^ +/m',
                 fn ($m) => str_repeat(' ', strlen($m[0]) / 2),
-                str_replace('[]', '{}', json_encode($data, JSON_NUMERIC_CHECK | JSON_PRETTY_PRINT))
+                $data !== null
+                    ? str_replace('[]', '{}', json_encode($data, JSON_NUMERIC_CHECK | JSON_PRETTY_PRINT))
+                    : ""
             );
             if ($this->environment->getBool('DRY')) {
                 $this->logger->warning('Not emitting {file} ({bytes} bytes), as we are in dry run mode (--dry)', ['file' => $file, 'bytes' => strlen($encoded)]);
